@@ -167,6 +167,20 @@
     const dw=iw*scale,dh=ih*scale;
     ctx.drawImage(image,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
   }
+  function updateCardThumb(item) {
+    const card=[...$("cards").children].find(el=>el.dataset.id===item.id);
+    const art=card?.querySelector(".expression-art");
+    if(!art||!item.thumb)return;
+    let img=art.querySelector("img");
+    if(!img) {
+      const placeholder=art.querySelector(".muted");
+      if(placeholder)placeholder.remove();
+      img=document.createElement("img");
+      art.insertBefore(img,art.firstChild);
+    }
+    img.src=item.thumb;
+    img.alt=item.label||"표정 미리보기";
+  }
   function queueThumbnails() {
     clearTimeout(thumbnailTimer);
     const version=++thumbnailVersion;
@@ -191,10 +205,11 @@
         if(version!==thumbnailVersion) return;
         item.thumb=canvas.toDataURL("image/png");
       } catch(e) {console.warn("Thumbnail failed:",item.name,e);item.thumb=null;}
+      updateCardThumb(item);
       finished++;
       if(finished%5===0||finished===entries.length){
         $("cropStatus").textContent=finished===entries.length?"크롭 적용 완료 · "+finished+"장":"얼굴 추출 중 · "+finished+" / "+entries.length;
-        renderCards(); renderPreview();
+        renderPreview();
         await sleepFrame();
       }
     }
@@ -433,7 +448,8 @@
   function text(ctx,value,x,y,size,color,font="sans-serif",align="left",weight=500,maxWidth=undefined){
     ctx.fillStyle=color;ctx.textAlign=align;ctx.textBaseline="alphabetic";
     ctx.font=weight+" "+Math.max(8,Math.round(size))+"px "+font;
-    ctx.fillText(String(value),x,y,maxWidth);
+    if(Number.isFinite(maxWidth))ctx.fillText(String(value),x,y,maxWidth);
+    else ctx.fillText(String(value),x,y);
   }
   async function drawPage(pageIndex){
     const [w,h]=state.format==="a4"?[3508,2480]:[2560,1440];
