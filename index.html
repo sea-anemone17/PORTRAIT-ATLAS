@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#191c24">
+  <meta name="description" content="전신 스탠딩에서 얼굴 표정 차분을 한 번에 잘라 포트레이트 도감을 만드는 무료 브라우저 도구">
+  <title>PORTRAIT ATLAS — 표정 도감 제작기</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span><div><strong>PORTRAIT <span>ATLAS</span></strong><small>CHARACTER EXPRESSION ARCHIVE</small></div></div>
+    <div class="top-actions">
+      <span class="privacy-note"><span class="privacy-dot"></span>이미지는 기기에서만 처리됩니다</span>
+      <button class="btn subtle" id="newProject" type="button">새 프로젝트</button>
+      <button class="btn subtle" id="importProject" type="button">프로젝트 열기</button>
+      <button class="btn outline" id="saveProject" type="button">프로젝트 저장 <span aria-hidden="true">↗</span></button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-title"><span>WORKSPACE</span><span class="mini-tag">01 — 03</span></div>
+      <section class="panel">
+        <div class="section-number">01 / FILES</div>
+        <h2>캐릭터 & 이미지</h2>
+        <label class="field-label" for="projectTitle">캐릭터 / 도감 제목</label>
+        <input id="projectTitle" class="text-input" type="text" placeholder="예: 마시 멜로우" maxlength="80" value="새 캐릭터">
+        <label class="upload-zone base-upload" id="baseDrop">
+          <input type="file" accept="image/png,image/jpeg,image/webp" id="baseInput" hidden>
+          <span class="upload-icon">↥</span>
+          <span><strong>기본 전신 스탠딩</strong><small id="baseFileName">클릭 또는 파일을 끌어다 놓기</small></span>
+        </label>
+        <label class="upload-zone batch-upload" id="facesDrop">
+          <input type="file" accept="image/png,image/jpeg,image/webp" id="facesInput" multiple hidden>
+          <span class="upload-icon">＋</span>
+          <span><strong>표정 스탠딩 일괄 추가</strong><small>PNG · JPG · WEBP / 여러 장 선택 가능</small></span>
+        </label>
+        <div class="metric-row">
+          <span>등록된 포트레이트</span><strong id="faceCount">0장</strong>
+        </div>
+        <p class="muted caption">표정마다 파일을 하나씩 올릴 필요 없이 80장도 한 번에 선택할 수 있습니다.</p>
+      </section>
+
+      <section class="panel">
+        <div class="section-number">02 / FACE CROP</div>
+        <div class="section-heading"><h2>얼굴 영역 지정</h2><button class="text-btn" id="resetCrop" type="button">초기화</button></div>
+        <p class="muted caption">아래 스탠딩에서 얼굴을 드래그해 사각형으로 지정하세요. 모든 차분에 동일하게 적용됩니다.</p>
+        <div class="crop-stage"><canvas id="cropCanvas" width="500" height="620" aria-label="기본 스탠딩 위에서 얼굴 영역을 드래그하여 선택"></canvas><span class="crop-empty" id="cropEmpty">전신 스탠딩을 먼저 추가하세요</span></div>
+        <div class="crop-fields">
+          <label>X <input id="cropX" type="number" min="0" max="99" step="1" value="24"><span>%</span></label>
+          <label>Y <input id="cropY" type="number" min="0" max="99" step="1" value="3"><span>%</span></label>
+          <label>너비 <input id="cropW" type="number" min="1" max="100" step="1" value="52"><span>%</span></label>
+          <label>높이 <input id="cropH" type="number" min="1" max="100" step="1" value="27"><span>%</span></label>
+        </div>
+        <div class="crop-result"><span>얼굴 미리보기</span><canvas id="sampleCanvas" width="120" height="120" aria-label="현재 얼굴 크롭 미리보기"></canvas></div>
+        <div class="loading-note" id="cropStatus" aria-live="polite"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-number">03 / LAYOUT</div>
+        <h2>도감 출력 설정</h2>
+        <div class="fields-two">
+          <label>페이지당 표정<select id="pageSize"><option value="12">12개</option><option value="20">20개</option><option value="30">30개</option><option value="40" selected>40개</option><option value="48">48개</option></select></label>
+          <label>표 열 개수<select id="columns"><option value="4">4열</option><option value="5">5열</option><option value="6" selected>6열</option><option value="8">8열</option></select></label>
+          <label>캔버스 규격<select id="format"><option value="wide">와이드 · 2560 × 1440</option><option value="a4">A4 가로 · 3508 × 2480</option></select></label>
+          <label>도감 색상<select id="theme"><option value="light">페이퍼 화이트</option><option value="dark">미드나잇 잉크</option></select></label>
+        </div>
+        <label class="toggle-line"><input id="repeatStanding" type="checkbox" checked><span>모든 페이지에 기본 스탠딩 표시</span></label>
+        <p class="muted caption">두 번째 페이지부터 전신 스탠딩을 생략할 수도 있습니다.</p>
+      </section>
+      <p class="sidebar-footer">PORTRAIT ATLAS <span>© your characters, your archive.</span></p>
+    </aside>
+
+    <main class="workspace">
+      <section class="intro">
+        <div><div class="eyebrow"><span class="ornament">✦</span> MAKE EVERY EXPRESSION COUNT</div><h1>한 캐릭터의 모든 표정을,<br><em>한 권의 도감처럼.</em></h1><p>얼굴 한 번 지정하고, 이름만 붙이세요. 나머지는 ATLAS가 정리합니다.</p></div>
+        <div class="intro-stats"><strong id="introCount">00</strong><span>EXPRESSIONS</span></div>
+      </section>
+
+      <section class="preview-section">
+        <div class="area-header"><div><span class="overline">LIVE CANVAS</span><h2>도감 미리보기 <span class="soft">/ PAGE PREVIEW</span></h2></div><div class="header-actions"><button id="downloadPage" class="btn outline" type="button">현재 페이지 PNG</button><button id="downloadAll" class="btn primary" type="button">전체 페이지 ZIP ↓</button></div></div>
+        <div id="pagePreview" class="page-frame" aria-live="polite"></div>
+        <div class="page-controls"><span class="muted" id="pageDescription">이미지를 추가하면 도감이 만들어집니다.</span><div class="page-nav"><button id="prevPage" class="nav-btn" type="button" aria-label="이전 페이지">←</button><span id="pageNumber">01 / 01</span><button id="nextPage" class="nav-btn" type="button" aria-label="다음 페이지">→</button></div></div>
+      </section>
+
+      <section class="inventory-section">
+        <div class="area-header"><div><span class="overline">EXPRESSION INDEX</span><h2>표정 이름 붙이기 <span class="soft">/ EDIT & ARRANGE</span></h2></div><div class="header-actions"><button class="btn subtle" id="sortByName" type="button">파일명순 정렬</button><button class="btn subtle danger-text" id="removeAllFaces" type="button">전체 삭제</button></div></div>
+        <p class="muted inventory-hint">이미지 아래 입력란에서 직접 이름을 붙이세요. 카드를 드래그하거나 화살표로 순서를 바꿀 수 있습니다.</p>
+        <div id="cards" class="cards"></div>
+      </section>
+    </main>
+  </div>
+  <input id="projectInput" type="file" accept=".patlas,application/octet-stream" hidden>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
